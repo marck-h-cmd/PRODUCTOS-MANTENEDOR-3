@@ -79,6 +79,10 @@ exports.generateInventoryReport = async (categoria) => {
           <td>S/ {{valorTotal}}</td>
         </tr>
         {{/each}}
+        <tr style="background: #1e3a8a; color: white; font-weight: 600;">
+          <td colspan="8" style="text-align: right; padding: 10px;">TOTAL INVENTARIO:</td>
+          <td style="text-align: left; padding: 10px;">S/ {{totalInventário}}</td>
+        </tr>
       </tbody>
     </table>
     <div class="footer">Sistema de Gestión de Inventario — Generado el {{fecha}}</div>
@@ -86,15 +90,20 @@ exports.generateInventoryReport = async (categoria) => {
   </html>
   `;
 
+  const productsWithTotal = products.map(p => ({
+    ...p.toJSON(),
+    lowStock: p.stock_actual < p.stock_minimo,
+    valorTotal: (p.stock_actual * parseFloat(p.precio_compra)).toFixed(2),
+  }));
+
+  const totalInventário = productsWithTotal.reduce((sum, p) => sum + parseFloat(p.valorTotal), 0).toFixed(2);
+
   const data = {
     fecha: new Date().toLocaleDateString('es-PE', { year: 'numeric', month: 'long', day: 'numeric' }),
     categoria: categoria || null,
     total: products.length,
-    products: products.map(p => ({
-      ...p.toJSON(),
-      lowStock: p.stock_actual < p.stock_minimo,
-      valorTotal: (p.stock_actual * parseFloat(p.precio_compra)).toFixed(2),
-    })),
+    products: productsWithTotal,
+    totalInventário,
   };
 
   const result = await rep.render({
