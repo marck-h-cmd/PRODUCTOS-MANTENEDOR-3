@@ -1,0 +1,25 @@
+{
+  "name": "inventario-backend",
+  "version": "1.0.0",
+  "description": "API REST - Sistema de Gestión de Productos",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "dependencies": {
+    "@jsreport/jsreport-chrome-pdf": "^4.0.0",
+    "@jsreport/jsreport-core": "^4.0.0",
+    "@jsreport/jsreport-handlebars": "^4.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "express-validator": "^7.0.1",
+    "pg": "^8.11.0",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.32.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
