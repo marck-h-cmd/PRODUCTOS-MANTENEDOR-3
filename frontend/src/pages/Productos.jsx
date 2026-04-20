@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { api } from '../services/api'
 import { 
   Plus, Search, Edit2, Trash2, ChevronLeft, ChevronRight, 
-  Package, AlertTriangle, CheckCircle2, MoreHorizontal, X
+  Package, AlertTriangle, CheckCircle2, X
 } from 'lucide-react'
 
 const EMPTY = {
@@ -24,7 +24,7 @@ export default function Productos({ showToast }) {
   const [page, setPage]           = useState(1)
   const [loading, setLoading]     = useState(true)
 
-  const [modal, setModal]         = useState(null)  // 'create' | 'edit' | 'delete'
+  const [modal, setModal]         = useState(null)
   const [editing, setEditing]     = useState(null)
   const [form, setForm]           = useState(EMPTY)
   const [errors, setErrors]       = useState({})
@@ -61,16 +61,36 @@ export default function Productos({ showToast }) {
 
   const validate = () => {
     const e = {}
-    if (!form.sku)           e.sku = 'Requerido'
-    if (!form.nombre)        e.nombre = 'Requerido'
-    if (!form.categoria)     e.categoria = 'Requerida'
-    if (!form.proveedor)     e.proveedor = 'Requerido'
-    if (form.precio_compra === '' || form.precio_compra < 0) e.precio_compra = 'Inválido'
-    if (form.precio_venta === '' || form.precio_venta < 0)  e.precio_venta = 'Inválido'
-    if (form.stock_actual === '' || form.stock_actual < 0)  e.stock_actual = 'Inválido'
-    if (form.stock_minimo === '' || form.stock_minimo < 0)  e.stock_minimo = 'Inválido'
+    if (!form.sku?.trim()) e.sku = 'El SKU es obligatorio'
+    else if (form.sku.length < 3) e.sku = 'Mínimo 3 caracteres'
+    
+    if (!form.nombre?.trim()) e.nombre = 'El nombre es obligatorio'
+    else if (form.nombre.length < 3) e.nombre = 'Mínimo 3 caracteres'
+    
+    if (!form.categoria) e.categoria = 'Seleccione una categoría'
+    if (!form.proveedor) e.proveedor = 'Seleccione un proveedor'
+    
+    const pCompra = parseFloat(form.precio_compra)
+    const pVenta = parseFloat(form.precio_venta)
+    
+    if (isNaN(pCompra) || pCompra < 0) e.precio_compra = 'Precio inválido'
+    if (isNaN(pVenta) || pVenta < 0) e.precio_venta = 'Precio inválido'
+    else if (pVenta < pCompra) e.precio_venta = 'Menor al precio de compra'
+    
+    if (form.stock_actual === '' || isNaN(form.stock_actual) || form.stock_actual < 0) e.stock_actual = 'Stock inválido'
+    if (form.stock_minimo === '' || isNaN(form.stock_minimo) || form.stock_minimo < 0) e.stock_minimo = 'Stock inválido'
+    
     setErrors(e)
     return Object.keys(e).length === 0
+  }
+
+  const handleChange = (k, v) => {
+    setForm(prev => ({ ...prev, [k]: v }))
+    if (errors[k]) setErrors(prev => {
+      const newE = { ...prev }
+      delete newE[k]
+      return newE
+    })
   }
 
   const handleSave = async () => {
@@ -87,6 +107,7 @@ export default function Productos({ showToast }) {
       setModal(null)
       loadData()
     } catch (err) {
+      // Si el backend devuelve un error de validación, lo mostramos
       showToast(err.message, 'error')
     } finally {
       setSaving(false)
@@ -107,12 +128,6 @@ export default function Productos({ showToast }) {
     }
   }
 
-  const f = (k) => ({
-    value: form[k] ?? '',
-    className: `form-control${errors[k] ? ' error' : ''}`,
-    onChange: e => setForm(v => ({ ...v, [k]: e.target.value })),
-  })
-
   return (
     <div>
       <div className="page-header">
@@ -123,8 +138,8 @@ export default function Productos({ showToast }) {
       {/* Toolbar */}
       <div className="toolbar">
         <div className="toolbar-left">
-          <div className="search-wrapper">
-            <Search size={18} className="search-icon" />
+          <div className="search-wrapper" style={{ position:'relative' }}>
+            <Search size={18} style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', color:'var(--gray-500)' }} />
             <input className="search-input" placeholder="Buscar por nombre, SKU o categoría…"
               value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} />
           </div>
@@ -215,7 +230,7 @@ export default function Productos({ showToast }) {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                <div className="modal-icon-bg"><Package size={20} /></div>
+                <div className="modal-icon-bg" style={{ background:'var(--blue-50)', color:'var(--blue-600)', padding:8, borderRadius:8, display:'flex' }}><Package size={20} /></div>
                 <h2>{modal === 'create' ? 'Nuevo Producto' : 'Editar Producto'}</h2>
               </div>
               <button className="btn-icon" onClick={() => setModal(null)} disabled={saving}><X size={20} /></button>
@@ -223,17 +238,17 @@ export default function Productos({ showToast }) {
             <div className="form-grid">
               <div className="form-group">
                 <label>SKU *</label>
-                <input {...f('sku')} placeholder="TEC-001" disabled={saving} />
+                <input className={`form-control${errors.sku?' error':''}`} value={form.sku} onChange={e => handleChange('sku', e.target.value.toUpperCase())} placeholder="TEC-001" disabled={saving} />
                 {errors.sku && <span className="form-error">{errors.sku}</span>}
               </div>
               <div className="form-group">
                 <label>Nombre *</label>
-                <input {...f('nombre')} placeholder="Nombre del producto" disabled={saving} />
+                <input className={`form-control${errors.nombre?' error':''}`} value={form.nombre} onChange={e => handleChange('nombre', e.target.value)} placeholder="Nombre del producto" disabled={saving} />
                 {errors.nombre && <span className="form-error">{errors.nombre}</span>}
               </div>
               <div className="form-group">
                 <label>Categoría *</label>
-                <select {...f('categoria')} disabled={saving}>
+                <select className={`form-control${errors.categoria?' error':''}`} value={form.categoria} onChange={e => handleChange('categoria', e.target.value)} disabled={saving}>
                   <option value="">Seleccionar…</option>
                   {categories.map(c => <option key={c.nombre} value={c.nombre}>{c.nombre}</option>)}
                 </select>
@@ -241,7 +256,7 @@ export default function Productos({ showToast }) {
               </div>
               <div className="form-group">
                 <label>Proveedor *</label>
-                <select {...f('proveedor')} disabled={saving}>
+                <select className={`form-control${errors.proveedor?' error':''}`} value={form.proveedor} onChange={e => handleChange('proveedor', e.target.value)} disabled={saving}>
                   <option value="">Seleccionar…</option>
                   {suppliers.map(s => <option key={s.nombre} value={s.nombre}>{s.nombre}</option>)}
                 </select>
@@ -249,27 +264,27 @@ export default function Productos({ showToast }) {
               </div>
               <div className="form-group">
                 <label>Precio Compra (S/) *</label>
-                <input {...f('precio_compra')} type="number" min="0" step="0.01" disabled={saving} />
+                <input className={`form-control${errors.precio_compra?' error':''}`} type="number" step="0.01" value={form.precio_compra} onChange={e => handleChange('precio_compra', e.target.value)} disabled={saving} />
                 {errors.precio_compra && <span className="form-error">{errors.precio_compra}</span>}
               </div>
               <div className="form-group">
                 <label>Precio Venta (S/) *</label>
-                <input {...f('precio_venta')} type="number" min="0" step="0.01" disabled={saving} />
+                <input className={`form-control${errors.precio_venta?' error':''}`} type="number" step="0.01" value={form.precio_venta} onChange={e => handleChange('precio_venta', e.target.value)} disabled={saving} />
                 {errors.precio_venta && <span className="form-error">{errors.precio_venta}</span>}
               </div>
               <div className="form-group">
                 <label>Stock Actual *</label>
-                <input {...f('stock_actual')} type="number" min="0" disabled={saving} />
+                <input className={`form-control${errors.stock_actual?' error':''}`} type="number" value={form.stock_actual} onChange={e => handleChange('stock_actual', e.target.value)} disabled={saving} />
                 {errors.stock_actual && <span className="form-error">{errors.stock_actual}</span>}
               </div>
               <div className="form-group">
                 <label>Stock Mínimo *</label>
-                <input {...f('stock_minimo')} type="number" min="0" disabled={saving} />
+                <input className={`form-control${errors.stock_minimo?' error':''}`} type="number" value={form.stock_minimo} onChange={e => handleChange('stock_minimo', e.target.value)} disabled={saving} />
                 {errors.stock_minimo && <span className="form-error">{errors.stock_minimo}</span>}
               </div>
               <div className="form-group full">
                 <label>Descripción</label>
-                <textarea {...f('descripcion')} rows={2} placeholder="Descripción opcional" disabled={saving} />
+                <textarea className="form-control" rows={2} value={form.descripcion || ''} onChange={e => handleChange('descripcion', e.target.value)} placeholder="Descripción opcional" disabled={saving} />
               </div>
             </div>
             <div className="modal-footer">
@@ -286,10 +301,10 @@ export default function Productos({ showToast }) {
       {modal === 'delete' && editing && (
         <div className="modal-overlay" onClick={() => !saving && setModal(null)}>
           <div className="modal" style={{ maxWidth:420 }} onClick={e => e.stopPropagation()}>
-            <div className="confirm-box">
-              <div className="confirm-icon" style={{ background:'var(--red-50)', color:'var(--red-600)' }}><Trash2 size={32} /></div>
-              <h3>¿Eliminar producto?</h3>
-              <p>¿Estás seguro de que deseas eliminar <strong>{editing.nombre}</strong>?<br />Esta acción no se puede deshacer.</p>
+            <div className="confirm-box" style={{ textAlign:'center' }}>
+              <div className="confirm-icon" style={{ background:'var(--red-50)', color:'var(--red-600)', width:64, height:64, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px' }}><Trash2 size={32} /></div>
+              <h3 style={{ fontSize:18, marginBottom:8 }}>¿Eliminar producto?</h3>
+              <p style={{ color:'var(--gray-500)', fontSize:14 }}>¿Estás seguro de que deseas eliminar <strong>{editing.nombre}</strong>?<br />Esta acción no se puede deshacer.</p>
             </div>
             <div className="modal-footer" style={{ justifyContent:'center' }}>
               <button className="btn btn-secondary" onClick={() => setModal(null)} disabled={saving}>Cancelar</button>

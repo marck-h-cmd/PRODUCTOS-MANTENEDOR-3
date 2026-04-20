@@ -33,7 +33,8 @@ export default function Dashboard() {
         ])
         setKpis(k)
         setTopCats(t)
-        setDist(d)
+        // Asegurar que value sea número para el gráfico de torta
+        setDist(d.map(item => ({ ...item, value: parseFloat(item.value) })))
         setLowStock(l)
       } catch (err) {
         console.error(err)
@@ -101,14 +102,20 @@ export default function Dashboard() {
         <div className="card">
           <div className="chart-title">Distribución del valor de inventario</div>
           <ResponsiveContainer width="100%" height={240}>
-            <PieChart>
-              <Pie data={dist} cx="50%" cy="50%" innerRadius={55} outerRadius={85}
-                dataKey="value" nameKey="name" paddingAngle={3}>
-                {dist.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-              </Pie>
-              <Tooltip formatter={v => [fmtS(v), 'Valor']} contentStyle={{ fontSize:12, borderRadius:6 }} />
-              <Legend iconSize={10} iconType="circle" wrapperStyle={{ fontSize:11 }} />
-            </PieChart>
+            {dist.length > 0 ? (
+              <PieChart>
+                <Pie data={dist} cx="50%" cy="50%" innerRadius={60} outerRadius={80}
+                  dataKey="value" nameKey="name" paddingAngle={5}>
+                  {dist.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} stroke="none" />)}
+                </Pie>
+                <Tooltip formatter={v => [fmtS(v), 'Valor']} contentStyle={{ fontSize:12, borderRadius:8, border:'none', boxShadow:'var(--shadow-md)' }} />
+                <Legend iconSize={8} iconType="circle" wrapperStyle={{ fontSize:11, paddingTop:10 }} />
+              </PieChart>
+            ) : (
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100%', color:'var(--gray-400)', fontSize:13 }}>
+                No hay datos suficientes
+              </div>
+            )}
           </ResponsiveContainer>
         </div>
       </div>
