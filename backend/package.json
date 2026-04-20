@@ -11,12 +11,16 @@
     "@jsreport/jsreport-chrome-pdf": "^4.0.0",
     "@jsreport/jsreport-core": "^4.0.0",
     "@jsreport/jsreport-handlebars": "^4.0.0",
+    "browsers": "^1.0.2",
+    "chrome": "^0.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "express-validator": "^7.0.1",
+    "install": "^0.13.0",
     "pg": "^8.11.0",
     "pg-hstore": "^2.3.4",
+    "puppeteer": "^24.42.0",
     "sequelize": "^6.32.1"
   },
   "devDependencies": {
